@@ -142,10 +142,20 @@ grammar =
   # the ordinary **Assign** is that these allow numbers and strings as keys.
   AssignObj: [
     o 'ObjAssignable',                          -> new Value $1
+    o 'LiteralAccessors',                       -> new Assign new Value($1.getLastProperty().name), $1, 'object'
     o 'ObjAssignable : Expression',             -> new Assign new Value($1), $3, 'object'
     o 'ObjAssignable :
        INDENT Expression OUTDENT',              -> new Assign new Value($1), $4, 'object'
     o 'Comment'
+  ]
+
+  # foo.bar, foo.bar.baz, etc
+  LiteralAccessors: [
+    o 'This LiteralAccessor',                   -> $1.add($2)
+    o 'Identifier LiteralAccessor',             -> new Value($1).add($2)
+    o 'Parenthetical LiteralAccessor',          -> new Value($1).add($2)
+    o 'LiteralAccessors LiteralAccessor',       -> $1.add($2)
+    o 'ThisProperty LiteralAccessor',           -> $1.add($2)
   ]
 
   ObjAssignable: [
@@ -242,11 +252,16 @@ grammar =
   # The general group of accessors into an object, by property, by prototype
   # or by array index or slice.
   Accessor: [
+    o 'LiteralAccessor'
+    o 'Index'
+  ]
+
+  # Accessors which rely on a literal identifier
+  LiteralAccessor: [
     o '.  Identifier',                          -> new Access $2
     o '?. Identifier',                          -> new Access $2, 'soak'
     o ':: Identifier',                          -> [(new Access new Literal 'prototype'), new Access $2]
     o '::',                                     -> new Access new Literal 'prototype'
-    o 'Index'
   ]
 
   # Indexing into an object or array using bracket notation.

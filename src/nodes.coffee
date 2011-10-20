@@ -365,6 +365,8 @@ exports.Value = class Value extends Base
 
   hasProperties: ->
     !!@properties.length
+  
+  getLastProperty: -> @properties[@properties.length - 1]
 
   # Some boolean checks for the benefit of other nodes.
   isArray        : -> not @properties.length and @base instanceof Arr
@@ -947,7 +949,7 @@ exports.Assign = class Assign extends Base
   # we've been assigned to, for correct internal references. If the variable
   # has not been seen yet within the current scope, declare it.
   compileNode: (o) ->
-    if isValue = @variable instanceof Value
+    if @variable instanceof Value
       return @compilePatternMatch o if @variable.isArray() or @variable.isObject()
       return @compileSplice       o if @variable.isSplice()
       return @compileConditional  o if @context in ['||=', '&&=', '?=']
