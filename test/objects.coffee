@@ -199,6 +199,25 @@ test "invoking functions with implicit object literals", ->
 
   throws -> CoffeeScript.compile "a = b:1, c"
 
+test "shorthand {foo.bar} style objects", ->
+  foo = 5
+  obj = { foo }
+  ok 'foo' of obj
+
+  obj2 = { obj.foo }
+  ok 'foo' of obj2 and obj2.foo == obj.foo
+
+  foo = { bar: baz: 5 }
+  obj = { foo.bar.baz }
+  ok 'baz' of obj and obj.baz == 5
+
+  obj = { foo: 'bar', baz: qux: 10 }
+  x = -> { @foo, @baz.qux }
+  result = x.call(obj)
+  ok 'foo' of result and result.foo == 'bar'
+  ok 'qux' of result and result.qux == 10
+  
+
 test "some weird indentation in YAML-style object literals", ->
   two = (a, b) -> b
   obj = then two 1,
