@@ -33,8 +33,8 @@ sources = [
 ].map (filename) -> "src/#{filename}.coffee"
 
 # Run a CoffeeScript through our node/coffee interpreter.
-run = (args, cb) ->
-  proc =         spawn 'bin/coffee', args
+run = (args, cb, coffee = false) ->
+  proc =         spawn (if coffee then 'coffee' else 'bin/coffee'), args
   proc.stderr.on 'data', (buffer) -> console.log buffer.toString()
   proc.on        'exit', (status) ->
     process.exit(1) if status != 0
@@ -69,19 +69,19 @@ task 'install', 'install CoffeeScript into /usr/local (or --prefix)', (options) 
 task 'build', 'build the CoffeeScript language from source', build = (cb) ->
   files = fs.readdirSync 'src'
   files = ('src/' + file for file in files when file.match(/\.coffee$/))
-  run ['-c', '-o', 'lib/coffee-script'].concat(files), cb
+  run ['-c', '-o', 'lib/coffee-script'].concat(files), cb, true
 
 
-task 'build:full', 'rebuild the source twice, and run the tests', ->
+task 'build:full', 'rebuild the source and the parser, and run the tests', ->
   build ->
-    build ->
+    buildParser ->
       csPath = './lib/coffee-script'
       delete require.cache[require.resolve csPath]
       unless runTests require csPath
         process.exit 1
 
 
-task 'build:parser', 'rebuild the Jison parser (run build first)', ->
+task 'build:parser', 'rebuild the Jison parser (run build first)', buildParser = ->
   extend global, require('util')
   require 'jison'
   parser = require('./lib/coffee-script/grammar').parser
