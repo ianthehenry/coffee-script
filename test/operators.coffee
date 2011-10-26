@@ -263,3 +263,49 @@ test "#1102: String literal prevents line continuation", ->
 test "#1703, ---x is invalid JS", ->
   x = 2
   eq (- --x), -1
+
+# Isa operator
+
+test "isa primitives", ->
+  ok 'foo' isa String
+  ok 5 isa Number
+  ok true isa Boolean
+
+  eq false, 'foo' isa Object
+  eq false, 5 isa Object
+  eq false, true isa Object
+
+test "isa functions", ->
+  ok (->) isa Function
+  ok (->) isa Object
+
+  eq false, {} isa Function
+  eq false, [] isa Function
+  eq false, 5 isa Function
+
+test "isa classical object", ->  
+  class Foo
+  ok (new Foo) isa Foo
+  ok (new Foo) isa Object
+
+  class Bar extends Foo
+  ok (new Bar) isa Bar
+  ok (new Bar) isa Foo
+  ok (new Bar) isa Object
+
+  eq false, (new Foo) isa Bar
+
+  ok [] isa Array
+  ok [] isa Object
+  eq false, {} isa Array
+  ok {} isa Object
+
+test "isa negations", ->  
+  eq false, 5 not isa Number
+  ok 5 not isa String
+
+# TODO: finish these once the new style objects are actually implemented
+test "isa new style objects", ->  
+  foo = { }
+  bar = { __proto__: foo }
+  ok bar isa foo

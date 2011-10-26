@@ -1278,6 +1278,7 @@ exports.While = class While extends Base
 exports.Op = class Op extends Base
   constructor: (op, first, second, flip ) ->
     return new In first, second if op is 'in'
+    return new Isa first, second if op is 'isa'
     if op is 'do'
       call = new Call first, first.params or []
       call.do = yes
@@ -1427,6 +1428,21 @@ exports.In = class In extends Base
     return code if sub is ref
     code = sub + ', ' + code
     if o.level < LEVEL_LIST then code else "(#{code})"
+
+  toString: (idt) ->
+    super idt, @constructor.name + if @negated then '!' else ''
+
+#### Isa
+exports.Isa = class Isa extends Base
+  constructor: (@child, @parent) ->
+
+  children: ['object', 'object']
+
+  invert: NEGATE
+
+  compileNode: (o) ->
+    code = utility('isa') + "(#{ @child.compile o, LEVEL_LIST }, #{ @parent.compile o, LEVEL_LIST })"
+    if @negated then "!" + code else code
 
   toString: (idt) ->
     super idt, @constructor.name + if @negated then '!' else ''
@@ -1822,6 +1838,27 @@ UTILITIES =
   # Discover if an item is in an array.
   indexOf: -> """
     Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (#{utility 'hasProp'}.call(this, i) && this[i] === item) return i; } return -1; }
+  """
+
+  # A supercharged instanceof that works with primitives
+  isa: -> """
+    function(child, parent) {
+      if(typeof child == 'string') return parent == String;
+      if(typeof child == 'boolean') return parent == Boolean;
+      if(typeof child == 'number') return parent == Number;
+      if(typeof parent == 'function') return child instanceof parent;
+      return (typeof child == 'object' &&
+        (parent == Object.getPrototypeOf(child) || (function() {
+            while(parent != Object) {
+              parent = Object.getPrototypeOf(parent);
+              if (parent == Object.getPrototypeOf(child))
+                return true;
+            }
+            return false;
+          })()
+        )
+      );
+    }
   """
 
   # Shortcuts to speed up the lookup time for native functions.
