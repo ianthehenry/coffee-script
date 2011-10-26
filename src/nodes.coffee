@@ -1279,6 +1279,7 @@ exports.Op = class Op extends Base
   constructor: (op, first, second, flip ) ->
     return new In first, second if op is 'in'
     return new Isa first, second if op is 'isa'
+    return new As first, second if op is 'as'
     if op is 'do'
       call = new Call first, first.params or []
       call.do = yes
@@ -1446,6 +1447,18 @@ exports.Isa = class Isa extends Base
 
   toString: (idt) ->
     super idt, @constructor.name + if @negated then '!' else ''
+
+#### As
+exports.As = class As extends Base
+  constructor: (@function, @object) ->
+
+  children: ['function', 'object']
+
+  compileNode: (o) ->
+    "#{utility 'bind'}(#{ @function.compile o, LEVEL_LIST }, #{ @object.compile o, LEVEL_LIST })"
+
+  toString: (idt) ->
+    super idt, @constructor.name
 
 #### Try
 

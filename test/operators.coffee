@@ -309,3 +309,12 @@ test "isa new style objects", ->
   foo = { }
   bar = { __proto__: foo }
   ok bar isa foo
+
+test "as operator", ->
+  foo = { bar: 5, baz: -> @bar }
+  baz = foo.baz
+  eq undefined, baz()
+  baz = foo.baz as foo
+  eq 5, baz()
+  qux = {bar: 10}
+  eq 10, do (foo.baz as qux)

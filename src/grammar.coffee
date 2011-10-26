@@ -541,6 +541,7 @@ grammar =
     o 'Expression SHIFT    Expression',         -> new Op $2, $1, $3
     o 'Expression COMPARE  Expression',         -> new Op $2, $1, $3
     o 'Expression LOGIC    Expression',         -> new Op $2, $1, $3
+    o 'Expression AS       Expression',         -> new Op $2, $1, $3
     o 'Expression RELATION Expression',         ->
       if $2.charAt(0) is '!'
         new Op($2.slice(1), $1, $3).invert()
@@ -576,6 +577,7 @@ operators = [
   ['left',      '+', '-']
   ['left',      'SHIFT']
   ['left',      'RELATION']
+  ['left',      'AS']
   ['left',      'COMPARE']
   ['left',      'LOGIC']
   ['nonassoc',  'INDENT', 'OUTDENT']
