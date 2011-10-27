@@ -318,3 +318,8 @@ test "as operator", ->
   eq 5, baz()
   qux = {bar: 10}
   eq 10, do (foo.baz as qux)
+
+test "let operator", ->
+  a = 10
+  eq 5, let (a = 5) -> a
+  eq 10, let (a, b = 5) -> a

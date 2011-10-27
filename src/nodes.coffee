@@ -1280,8 +1280,11 @@ exports.Op = class Op extends Base
     return new In first, second if op is 'in'
     return new Isa first, second if op is 'isa'
     return new As first, second if op is 'as'
-    if op is 'do'
-      call = new Call first, first.params or []
+    if op is 'do' or op is 'let'
+      params = first.params ? []
+      args = (param.value ? param for param in params)
+      param.value = undefined for param in params
+      call = new Call first, args
       call.do = yes
       return call
     if op is 'new'
