@@ -539,7 +539,7 @@ JS_KEYWORDS = [
 ]
 
 # CoffeeScript-only keywords.
-COFFEE_KEYWORDS = ['undefined', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when', 'isa', 'as']
+COFFEE_KEYWORDS = ['undefined', 'then', 'unless', 'until', 'loop', 'of', 'by', 'when', 'isa', 'as', 'over']
 
 COFFEE_ALIAS_MAP =
   and  : '&&'
@@ -641,7 +641,7 @@ COMPOUND_ASSIGN = [
 ]
 
 # Unary tokens.
-UNARY   = ['!', '~', 'NEW', 'TYPEOF', 'DELETE', 'DO', 'LET']
+UNARY   = ['!', '~', 'NEW', 'TYPEOF', 'DELETE', 'DO']
 
 # Logical tokens.
 LOGIC   = ['&&', '||', '&', '|', '^']

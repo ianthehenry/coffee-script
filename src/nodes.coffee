@@ -1280,11 +1280,8 @@ exports.Op = class Op extends Base
     return new In first, second if op is 'in'
     return new Isa first, second if op is 'isa'
     return new As first, second if op is 'as'
-    if op is 'do' or op is 'let'
-      params = first.params ? []
-      args = (param.value ? param for param in params)
-      param.value = undefined for param in params
-      call = new Call first, args
+    if op is 'do'
+      call = new Call first, first.params or []
       call.do = yes
       return call
     if op is 'new'
@@ -1795,6 +1792,41 @@ exports.If = class If extends Base
 
   unfoldSoak: ->
     @soak and this
+
+exports.Let = class Let extends Base
+  constructor: (@params, @body, options) ->
+
+  children: ['params', 'body']
+
+  bodyNode:     -> @body?.unwrap()
+
+  # The **If** only compiles into a statement if either of its bodies needs
+  # to be a statement. Otherwise a conditional operator is safe.
+  isStatement: (o) ->
+    o?.level is LEVEL_TOP or @bodyNode().isStatement(o)
+
+  jumps: (o) -> @body.jumps(o) or @elseBody?.jumps(o)
+
+  makeReturn: (res) ->
+    @body     and= new Block [@body.makeReturn res]
+    this
+
+  ensureBlock: (node) ->
+    if node instanceof Block then node else new Block [node]
+
+  jumps: (o) -> @body.jumps(o)
+
+  compileNode: (o) ->
+    paramNames  = (param.name.compile o, LEVEL_LIST for param in @params).join(', ')
+    paramValues = ((param.value ? param.name).compile o, LEVEL_LIST for param in @params).join(', ')
+    o.indent    += TAB
+    body        = @ensureBlock(@body)
+    body.makeReturn() unless @isStatement o
+    bodyc       = body.compileWithDeclarations o
+    bodyc       = "\n#{bodyc}\n#{@tab}" if bodyc
+    code        = "(function(#{paramNames}) {#{bodyc}})(#{paramValues})"
+    code        = "#{@tab}#{code};" if o?.level is LEVEL_TOP
+    code
 
 # Faux-Nodes
 # ----------

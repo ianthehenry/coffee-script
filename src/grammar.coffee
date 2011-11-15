@@ -97,6 +97,7 @@ grammar =
     o 'While'
     o 'For'
     o 'Switch'
+    o 'Let'
     o 'Class'
   ]
 
@@ -498,6 +499,25 @@ grammar =
     o 'LEADING_WHEN SimpleArgs Block TERMINATOR', -> [[$2, $3]]
   ]
 
+  # Let expressions.
+  Let: [
+    o 'LET LetParamList Block',                -> new Let $2, $3
+    o 'LET LetParamList OVER Expression',      -> new Let $2, Block.wrap [$4]
+  ]
+
+  # The list of parameters that a let expression accepts can be of any length.
+  LetParamList: [
+    o '',                                        -> []
+    o 'LetParam',                                -> [$1]
+    o 'LetParamList , LetParam',                 -> $1.concat $3
+  ]
+
+  # A single parameter in a let definition.
+  LetParam: [
+    o 'Identifier',                            -> new Param $1
+    o 'Identifier = Expression',               -> new Param $1, $3
+  ]
+
   # The most basic form of *if* is a condition and an action. The following
   # if-related rules are broken up along these lines in order to avoid
   # ambiguity.
@@ -505,6 +525,7 @@ grammar =
     o 'IF Expression Block',                    -> new If $2, $3, type: $1
     o 'IfBlock ELSE IF Expression Block',       -> $1.addElse new If $4, $5, type: $3
   ]
+
 
   # The full complement of *if* expressions, including postfix one-liner
   # *if* and *unless*.

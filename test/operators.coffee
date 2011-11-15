@@ -321,5 +321,10 @@ test "as operator", ->
 
 test "let operator", ->
   a = 10
-  eq 5, let (a = 5) -> a
-  eq 10, let (a, b = 5) -> a
+  eq 5, let a = 5 over a
+  eq 10, let a, b = 5 over a
+  foo = let a, b = 5
+    a++
+    a + b
+  eq foo, 16
+  eq a, 10
