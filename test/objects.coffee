@@ -256,3 +256,14 @@ test "#1322: implicit call against implicit object with block comments", ->
 test "#1513: Top level bare objs need to be wrapped in parens for unary and existence ops", ->
   doesNotThrow -> CoffeeScript.run "{}?", bare: true
   doesNotThrow -> CoffeeScript.run "{}.a++", bare: true
+
+test "prototypal inheritance", ->
+  parent = {bar: 10}
+  child = new parent
+  eq 10, child.bar
+  child.bar = 5
+  eq 5, child.bar
+  eq 10, parent.bar
+  grandchild = new child
+    bar: 100
+  eq 100, grandchild.bar

@@ -561,7 +561,7 @@ COFFEE_KEYWORDS = COFFEE_KEYWORDS.concat COFFEE_ALIASES
 RESERVED = [
   'case', 'default', 'var', 'void', 'with'
   'const', 'enum', 'export', 'import', 'native'
-  '__hasProp', '__extends', '__slice', '__bind', '__indexOf', '__isa'
+  '__hasProp', '__extends', '__slice', '__bind', '__indexOf', '__isa', '__new'
 ]
 
 # The superset of both JavaScript keywords and reserved words, none of which may

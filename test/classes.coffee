@@ -420,15 +420,16 @@ test "ensure that constructors invoked with splats return a new object", ->
   eq type1.constructor, Type1
   ok type1.a is args[0] and type1.b is args[1] and type1.c is args[2]
 
-  # Ensure that constructors invoked with splats cache the function.
+test "ensure that constructors invoked with splats cache the function", ->
+  args = [1, 2, 3]
   called = 0
   get = -> if called++ then false else class Type
-  new get() args...
+  new (get()) args...
 
-test "`new` shouldn't add extra parens", ->
-
-  ok new Date().constructor is Date
-
+test "`new` SHOULD add extra parens", ->
+  parent = -> {foo: {bar: 10}}
+  x = new parent().foo
+  eq 10, x.bar
 
 test "`new` works against bare function", ->
 

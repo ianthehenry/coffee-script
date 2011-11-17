@@ -42,13 +42,6 @@ test "bitwise operators", ->
   num = 10; eq  1, (num >>=  3)
   num = 10; eq  1, (num >>>= 3)
 
-test "`instanceof`", ->
-  ok new String instanceof String
-  ok new Boolean instanceof Boolean
-  # `instanceof` supports negation by prefixing the operator with `not`
-  ok new Number not instanceof String
-  ok new Array not instanceof Boolean
-
 test "use `::` operator on keywords `this` and `@`", ->
   nonce = {}
   obj =
@@ -307,8 +300,9 @@ test "isa negations", ->
 # TODO: finish these once the new style objects are actually implemented
 test "isa new style objects", ->  
   foo = { }
-  bar = { __proto__: foo }
+  bar = new foo
   ok bar isa foo
+  ok foo not isa bar
 
 test "as operator", ->
   foo = { bar: 5, baz: -> @bar }

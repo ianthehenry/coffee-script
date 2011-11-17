@@ -554,7 +554,11 @@ exports.Call = class Call extends Base
     if @isSuper
       @superReference(o) + ".call(this#{ args and ', ' + args })"
     else
-      (if @isNew then 'new ' else '') + @variable.compile(o, LEVEL_ACCESS) + "(#{args})"
+      if @isNew
+        # 'new ' + @variable.compile(o, LEVEL_ACCESS) + "(#{args})"
+        "#{utility 'new'}.call(#{@variable.compile(o, LEVEL_ACCESS)}#{if args.length == 0 then '' else ', '}#{args})"
+      else
+        @variable.compile(o, LEVEL_ACCESS) + "(#{args})"
 
   # `super()` is converted into a call against the superclass's implementation
   # of the current function.
@@ -569,10 +573,16 @@ exports.Call = class Call extends Base
     return "#{ @superReference o }.apply(this, #{splatArgs})" if @isSuper
     if @isNew
       idt = @tab + TAB
+      # return "#{utility 'new'}.apply(#{@variable.compile o}, #{splatArgs})"
+      return """
+        (function(func, args) {
+        #{idt}return #{utility 'new'}.apply(func, args);
+        #{@tab}})(#{ @variable.compile o, LEVEL_LIST }, #{splatArgs})
+      """
       return """
         (function(func, args, ctor) {
         #{idt}ctor.prototype = func.prototype;
-        #{idt}var child = new ctor, result = func.apply(child, args);
+        #{idt}var child = new ctor, result = #{utility 'new'}.apply(child, args);
         #{idt}return typeof result === "object" ? result : child;
         #{@tab}})(#{ @variable.compile o, LEVEL_LIST }, #{splatArgs}, function() {})
       """
@@ -1335,6 +1345,11 @@ exports.While = class While extends Base
       code += "\n#{@tab}return #{rvar};"
     code
 
+# exports.New = class New extends Base
+#   constructor: (@node, @args) ->
+#   compileNode: (o) ->
+#     return "#{utility 'new'}.call(#{@node.compile o}, #{@args.compile})"
+
 #### Op
 
 # Simple Arithmetic and logical operations. Performs some conversion from
@@ -1350,7 +1365,8 @@ exports.Op = class Op extends Base
       return call
     if op is 'new'
       return first.newInstance() if first instanceof Call and not first.do and not first.isNew
-      first = new Parens first   if first instanceof Code and first.bound or first.do
+      first = new Parens(first) if first instanceof Code and first.bound or first.do
+
     @operator = CONVERSIONS[op] or op
     @first    = first
     @second   = second
@@ -1447,9 +1463,11 @@ exports.Op = class Op extends Base
 
   # Compile a unary **Op**.
   compileUnary: (o) ->
+    if @operator == 'new'
+      return "#{utility 'new'}.call(#{@first.compile o, LEVEL_OP})"
     parts = [op = @operator]
     plusMinus = op in ['+', '-']
-    parts.push ' ' if op in ['new', 'typeof', 'delete'] or
+    parts.push ' ' if op in ['typeof', 'delete'] or
                       plusMinus and @first instanceof Op and @first.operator is op
     if (plusMinus && @first instanceof Op) or (op is 'new' and @first.isStatement o)
       @first = new Parens @first 
@@ -1959,17 +1977,14 @@ UTILITIES =
       if(typeof child == 'boolean') return parent == Boolean;
       if(typeof child == 'number') return parent == Number;
       if(typeof parent == 'function') return child instanceof parent;
-      return (typeof child == 'object' &&
-        (parent == Object.getPrototypeOf(child) || (function() {
-            while(parent != Object) {
-              parent = Object.getPrototypeOf(parent);
-              if (parent == Object.getPrototypeOf(child))
+      return (function() {
+            while(typeof(child) == 'object' && child != null) {
+              child = Object.getPrototypeOf(child);
+              if (parent == child)
                 return true;
             }
             return false;
-          })()
-        )
-      );
+          })();
     }
   """
 
@@ -1981,6 +1996,31 @@ UTILITIES =
         if(!#{utility 'isa'}(args[i], pattern[i]))
           return false;
       return true;
+    }
+  """
+
+  new: -> """
+    function() {
+      if(typeof(this) == 'function') {
+        var F = function() {};
+        F.prototype = this.prototype;
+        var temp = new F();
+        var result = this.apply(temp, arguments);
+        return typeof(result) != "undefined" ? result : temp;
+      }
+      if(arguments.length > 1 || (arguments.length == 1 && typeof(arguments[0]) != 'object'))
+        throw "Differential inheritance doesn't call a constructor"
+
+      var obj = arguments[0] || {};
+
+      var F = function() {}
+      F.prototype = this;
+      temp = new F()
+      for(var prop in obj)
+        if(obj.hasOwnProperty(prop))
+          temp[prop] = obj[prop];
+
+      return temp;
     }
   """
 
