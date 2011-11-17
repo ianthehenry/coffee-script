@@ -90,6 +90,7 @@ grammar =
     o 'Value'
     o 'Invocation'
     o 'Code'
+    o 'Overload'
     o 'Operation'
     o 'Assign'
     o 'If'
@@ -499,23 +500,58 @@ grammar =
     o 'LEADING_WHEN SimpleArgs Block TERMINATOR', -> [[$2, $3]]
   ]
 
+  # An overloaded function definition.
+  Overload: [
+    o 'FUNCTION INDENT OverloadDefs OUTDENT',         -> new Overload $3
+  ]
+
+  OverloadDefs: [
+    o 'TypedFunction',                   -> [$1]
+    o 'OverloadDefs TypedFunction',      -> $1.concat $2
+  ]
+
+  # An individual overloaded function definition.
+  TypedFunction: [
+    o 'PARAM_START TypedParamList PARAM_END FuncGlyph Block',            -> new TypedFunction $2, $5, $4
+    o 'PARAM_START TypedParamList PARAM_END FuncGlyph Block TERMINATOR', -> new TypedFunction $2, $5, $4
+    o 'FuncGlyph Block',                                                 -> new TypedFunction [], $2, $1
+    o 'FuncGlyph Block TERMINATOR',                                      -> new TypedFunction [], $2, $1
+  ]
+
+  # The list of parameters that a function accepts can be of any length.
+  TypedParamList: [
+    o '',                                       -> []
+    o 'TypedParam',                             -> [$1]
+    o 'TypedParamList , TypedParam',            -> $1.concat $3
+  ]
+
+  # A single parameter in a function definition can be ordinary, or a splat
+  # that hoovers up the remaining arguments.
+  TypedParam: [
+    o 'Type Identifier',                        -> new TypedParam $1, $2
+  ]
+
+  Type: [
+    o 'Identifier'
+  ]
+
   # Let expressions.
   Let: [
-    o 'LET LetParamList Block',                -> new Let $2, $3
-    o 'LET LetParamList OVER Expression',      -> new Let $2, Block.wrap [$4]
+    o 'LET LetParamList Block',                 -> new Let $2, $3
+    o 'LET LetParamList OVER Expression',       -> new Let $2, Block.wrap [$4]
   ]
 
   # The list of parameters that a let expression accepts can be of any length.
   LetParamList: [
-    o '',                                        -> []
-    o 'LetParam',                                -> [$1]
-    o 'LetParamList , LetParam',                 -> $1.concat $3
+    o '',                                       -> []
+    o 'LetParam',                               -> [$1]
+    o 'LetParamList , LetParam',                -> $1.concat $3
   ]
 
   # A single parameter in a let definition.
   LetParam: [
-    o 'Identifier',                            -> new Param $1
-    o 'Identifier = Expression',               -> new Param $1, $3
+    o 'Identifier',                             -> new Param $1
+    o 'Identifier = Expression',                -> new Param $1, $3
   ]
 
   # The most basic form of *if* is a condition and an action. The following
@@ -525,7 +561,6 @@ grammar =
     o 'IF Expression Block',                    -> new If $2, $3, type: $1
     o 'IfBlock ELSE IF Expression Block',       -> $1.addElse new If $4, $5, type: $3
   ]
-
 
   # The full complement of *if* expressions, including postfix one-liner
   # *if* and *unless*.

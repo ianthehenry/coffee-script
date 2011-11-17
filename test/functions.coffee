@@ -178,3 +178,52 @@ test "arguments vs parameters", ->
   doesNotThrow -> CoffeeScript.compile "f(x) ->"
   f = (g) -> g()
   eq 5, f (x) -> 5
+
+test "overloaded functions need at least one function definition", ->
+  throws -> CoffeeScript.compile "function\n"
+
+test "overloaded functions require types", ->
+  throws -> CoffeeScript.compile "function\n  (a) -> a"
+
+test "overloaded functions work with nullary functions", ->
+  foo = function
+    -> 5
+  eq foo(), 5
+  bar = function
+    () -> 5
+  eq bar(), 5
+
+test "do works with overloaded functions", ->
+  eq 5, (do function
+    -> 5)
+
+test "overloaded functions work properly", ->
+  foo = function
+    (String num) -> foo parseInt num
+    (Number num) -> num + 10
+  eq 15, foo 5
+  eq 16, foo '6'
+
+test "overloaded functions throw if guard is not met", ->
+  foo = function
+    (Number num) -> num
+  throws -> foo 'str'
+
+test "overloaded bound functions work properly", ->
+  context = {bar: 100}
+
+  fn = ->
+    unbound = function
+      () -> @bar
+    bound = function
+      () => @bar
+    mixed = function
+      -> @bar
+      (Number a) => @bar
+    map = { bar: 5, unbound, bound, mixed }
+    eq 5, map.unbound()
+    eq 100, map.bound()
+    eq 5, map.mixed()
+    eq 100, map.mixed(0)
+    
+  fn.call(context)

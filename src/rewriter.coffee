@@ -136,6 +136,17 @@ class exports.Rewriter
       tag     = token[0]
       noCall  = yes if tag in ['CLASS', 'IF']
       [prev, current, next] = tokens[i - 1 .. i + 1]
+
+      # Because type declarations look like function invocations, don't add implicit CALL_STARTs in the middle of parameter lists.      
+      isParamDefinition = do ->
+        for token in tokens[0...i].reverse()
+          if token[0] == 'PARAM_END'
+            return false
+          if token[0] == 'PARAM_START'
+            return true
+        return false
+      if isParamDefinition then return 1
+
       callObject  = not noCall and tag is 'INDENT' and
                     next and next.generated and next[0] is '{' and
                     prev and prev[0] in IMPLICIT_FUNC

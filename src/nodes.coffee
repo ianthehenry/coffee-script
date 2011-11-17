@@ -1175,6 +1175,70 @@ exports.Param = class Param extends Base
   isComplex: ->
     @name.isComplex()
 
+#### Overload
+
+# An overloaded function accepts a list of functions, and chooses 
+# which to invoke by type matching on the argument signature.
+exports.Overload = class Overload extends Base
+  constructor: (@functions) ->
+
+  children: ['functions']
+
+  compileNode: (o) ->
+    o.scope         = new Scope o.scope, @body, this
+    o.scope.shared  = del(o, 'sharedScope')
+    o.indent += TAB
+    code = (func.compile o for func in @functions).join('')
+    code += "#{o.indent}throw 'Unsupported argument list';\n"
+    "(function(_this) { return function() {\n#{code}#{@tab}} })(this)"
+
+#### Typed function
+
+# A function with TypedParams instead of Params
+exports.TypedFunction = class TypedFunction extends Base
+  constructor: (params, body, @tag) ->
+    @params  = params or []
+    @body    = body or new Block
+
+  children: ['params', 'body']
+
+  isStatement: -> !!@ctor
+
+  jumps: NO
+
+  # Compilation creates a new scope unless explicitly asked to share with the
+  # outer scope. Handles splat parameters in the parameter list by peeking at
+  # the JavaScript `arguments` object. If the function is bound with the `=>`
+  # arrow, generates a wrapper that saves the current value of `this` through
+  # a closure.
+  compileNode: (o) ->
+    pattern = (param.type.compile(o) for param in @params).join(', ')
+    pattern = "[#{pattern}]"
+    newParamList = (new Param(param.name) for param in @params)
+    backingFunc = new Code newParamList, @body, 'func'
+    code      = "#{o.indent}if(#{utility 'matches'}(arguments, #{pattern}))\n"
+    o.indent += TAB
+    context   = if @tag == 'boundfunc' then '_this' else 'this'
+    code     += "#{o.indent}return (#{backingFunc.compile o}).apply(#{context}, arguments);\n"
+
+  # Short-circuit `traverseChildren` method to prevent it from crossing scope boundaries
+  # unless `crossScope` is `true`.
+  traverseChildren: (crossScope, func) ->
+    super(crossScope, func) if crossScope
+
+#### TypedParam
+
+# A parameter in an overloaded function block.
+exports.TypedParam = class TypedParam extends Base
+  constructor: (@type, @name) ->
+
+  children: ['type', 'name']
+
+  compile: (o) ->
+    @name.compile o, LEVEL_LIST
+
+  isComplex: NO
+
 #### Splat
 
 # A splat, either as a parameter to a function, an argument to a call,
@@ -1906,6 +1970,17 @@ UTILITIES =
           })()
         )
       );
+    }
+  """
+
+  matches: -> """
+    function(args, pattern) {
+      if(args.length != pattern.length)
+        return false;
+      for(var i = 0; i < args.length; i++)
+        if(!#{utility 'isa'}(args[i], pattern[i]))
+          return false;
+      return true;
     }
   """
 
