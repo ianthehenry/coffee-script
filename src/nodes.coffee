@@ -1519,7 +1519,7 @@ exports.In = class In extends Base
 exports.Isa = class Isa extends Base
   constructor: (@child, @parent) ->
 
-  children: ['object', 'object']
+  children: ['child', 'parent']
 
   invert: NEGATE
 
